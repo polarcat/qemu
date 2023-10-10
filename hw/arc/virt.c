@@ -26,13 +26,16 @@
 #include "hw/pci-host/gpex.h"
 #include "hw/sysbus.h"
 #include "hw/arc/virt.h"
+#include "efi.h"
 
 #define VIRT_IO_BASE       0xf0000000
 #define VIRT_IO_SIZE       0x10000000
 
 /* UART */
 #define VIRT_UART_NUMBER   2
-#define VIRT_UART_OFFSET   0x0
+#ifndef VIRT_UART_OFFSET
+#define VIRT_UART_OFFSET   0x5000
+#endif
 #define VIRT_UART_IRQ      24
 #define VIRT_UART_SIZE     0x2000
 
@@ -175,7 +178,12 @@ static void virt_init(MachineState *machine)
 
     create_pcie(cpu);
 
-    arc_load_kernel(cpu, &boot_info);
+    if (!machine->firmware) {
+        arc_load_kernel(cpu, &boot_info);
+    } else {
+        cpu->env.pc = efi_probe_firmware(machine->firmware);
+        cpu->env.boot_info = &boot_info;
+    }
 }
 
 static void virt_machine_init(MachineClass *mc)
