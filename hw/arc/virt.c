@@ -55,6 +55,9 @@
 #define VIRT_PCI_PIO_SIZE  0x00004000
 #define PCIE_IRQ           40  /* IRQs 40-43 as GPEX_NUM_IRQS=4 */
 
+static struct QEMUTimer cpu_rtc;
+static void cpu_rtc_cb(void *opaque, QEMUClockType type) {};
+
 static void create_pcie(ARCCPU *cpu)
 {
     hwaddr base_ecam = VIRT_PCI_ECAM_BASE;
@@ -177,6 +180,11 @@ static void virt_init(MachineState *machine)
     }
 
     create_pcie(cpu);
+
+    /* Init real-time counter */
+    cpu->timer_build |= TB_RTC;
+    cpu_rtc.timer_list = timerlist_new(QEMU_CLOCK_VIRTUAL, cpu_rtc_cb, NULL);
+    cpu->env.cpu_rtc = &cpu_rtc;
 
     if (!machine->firmware) {
         arc_load_kernel(cpu, &boot_info);
